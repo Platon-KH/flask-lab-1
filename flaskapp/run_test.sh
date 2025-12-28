@@ -1,12 +1,13 @@
 #!/bin/bash
 # Запускаем Flask приложение через Gunicorn
 echo "Starting Gunicorn server..."
+cd /home/runner/work/flask-lab-1/flask-lab-1/flaskapp || cd flaskapp
 gunicorn --bind 127.0.0.1:5000 wsgi:app --daemon
 APP_PID=$!
 
 # Ждём запуска
 echo "Waiting for server to start..."
-sleep 5
+sleep 8
 
 # Запускаем тесты
 echo "Running tests..."
@@ -16,7 +17,7 @@ TEST_RESULT=$?
 # Останавливаем сервер
 echo "Stopping server..."
 kill -TERM $APP_PID
-sleep 2
+sleep 3
 
 # Возвращаем код результата тестов
 echo "Test result: $TEST_RESULT"

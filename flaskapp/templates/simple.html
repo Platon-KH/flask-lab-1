@@ -70,6 +70,17 @@
             border-radius: 5px;
             margin: 20px 0;
         }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -77,10 +88,20 @@
         <h1>🌀 Обработка изображений - Вариант 20</h1>
         
         <div class="info">
-            <strong>Описание:</strong> Сдвиг изображения по прямоугольным рамкам (спиральный эффект)
+            <strong>Описание:</strong> Сдвиг изображения по прямоугольным рамкам (спиральный эффект).
+            Пользователь задаёт количество пикселов для сдвига и количество рамок.
         </div>
         
-        <form method="POST" enctype="multipart/form-data">
+        {% if some_str %}
+        <div class="info">
+            <h3>Тестовые данные:</h3>
+            <p>{{ some_str }}</p>
+            <p>Значение: {{ some_value }}</p>
+            <p>Пользователь: {{ some_pars.user }}, Цвет: {{ some_pars.color }}</p>
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="/process" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="image">Выберите изображение:</label>
                 <input type="file" id="image" name="image" accept="image/*" required>
@@ -89,17 +110,23 @@
             <div class="form-group">
                 <label for="shift">Сдвиг (пикселов):</label>
                 <input type="number" id="shift" name="shift" min="1" max="100" value="10" required>
-                <small>Количество пикселов для сдвига рамок</small>
+                <small>Количество пикселов для сдвига рамок (1-100)</small>
             </div>
             
             <div class="form-group">
                 <label for="layers">Количество рамок:</label>
                 <input type="number" id="layers" name="layers" min="1" max="20" value="5" required>
-                <small>Сколько прямоугольных рамок сдвигать</small>
+                <small>Сколько прямоугольных рамок сдвигать (1-20)</small>
             </div>
             
             <button type="submit">Обработать изображение</button>
         </form>
+        
+        {% if error %}
+        <div class="error">
+            <strong>Ошибка:</strong> {{ error }}
+        </div>
+        {% endif %}
         
         {% if original_image %}
         <div class="images">
@@ -122,11 +149,12 @@
         {% endif %}
         {% endif %}
         
-        {% if error %}
-        <div style="color: red; margin-top: 20px; padding: 10px; background: #ffe6e6; border-radius: 5px;">
-            <strong>Ошибка:</strong> {{ error }}
+        <div class="info" style="margin-top: 40px;">
+            <h3>Информация о приложении:</h3>
+            <p>Flask приложение для лабораторной работы №1</p>
+            <p>Вариант 20: Спиральный сдвиг изображения</p>
+            <p>GitHub Actions CI/CD настроен</p>
         </div>
-        {% endif %}
     </div>
 </body>
 </html>

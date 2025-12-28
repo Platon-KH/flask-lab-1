@@ -1,0 +1,46 @@
+Вопросы к лабораторной работе №1
+Структура проекта.
+В методичеческих указаниях не указано, где создавать следующие файлы:
+- стр. 71 - создаем wsgi.py, 
+- стр. 72 - st.sl
+- стр. 73 - client.py
+- стр. 80 - net.py (какая папка является в данном контексте основной?)
+
+При тестировании  по стр. 75, ввести в браузере 127.0.0.1:5000/data_to возникла ошибка:Попытка соединения не удалась.
+Также как и при запуске с терминала:
+andrey@ubunt:~/Загрузки/flask-lab-1-main$ gunicorn --bind 127.0.0.1:5000 wsgi:app
+[2025-12-28 18:25:52 +1000] [4683] [INFO] Starting gunicorn 23.0.0
+[2025-12-28 18:25:52 +1000] [4683] [INFO] Listening at: http://127.0.0.1:5000 (4683)
+[2025-12-28 18:25:52 +1000] [4683] [INFO] Using worker: sync
+[2025-12-28 18:25:52 +1000] [4685] [INFO] Booting worker with pid: 4685
+[2025-12-28 18:25:52 +1000] [4685] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/arbiter.py", line 608, in spawn_worker
+    worker.init_process()
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/workers/base.py", line 135, in init_process
+    self.load_wsgi()
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/workers/base.py", line 147, in load_wsgi
+    self.wsgi = self.app.wsgi()
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+  File "/home/andrey/.local/lib/python3.8/site-packages/gunicorn/util.py", line 370, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/lib/python3.8/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1014, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 973, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'wsgi'
+[2025-12-28 18:25:52 +1000] [4685] [INFO] Worker exiting (pid: 4685)
+[2025-12-28 18:25:52 +1000] [4683] [ERROR] Worker (pid:4685) exited with code 3
+[2025-12-28 18:25:52 +1000] [4683] [ERROR] Shutting down: Master
+[2025-12-28 18:25:52 +1000] [4683] [ERROR] Reason: Worker failed to boot.
+andrey@ubunt:~/Загрузки/flask-lab-1-main$ ^C
+andrey@ubunt:~/Загрузки/flask-lab-1-main$ 
+
+стр. 82
+Создал капчу, непонятно что с ней делать дальше

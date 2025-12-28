@@ -1,89 +1,66 @@
 #!/bin/bash
 
-echo "=========================================="
-echo "     FLASK APPLICATION TEST SCRIPT"
-echo "=========================================="
+echo "🚀 Запуск тестов в CI окружении"
+echo "Текущая директория: $(pwd)"
 
-# Функция для очистки
-cleanup() {
-    echo "Cleaning up..."
-    # Убиваем все процессы gunicorn
-    pkill -f gunicorn 2>/dev/null || true
-    sleep 2
-}
+# Проверяем наличие Python
+python3 --version || { echo "❌ Python не найден"; exit 1; }
 
-# Регистрируем функцию очистки при выходе
-trap cleanup EXIT
-
-echo ""
-echo "Step 1: Checking Python and dependencies..."
-python --version
-pip list | grep -E "(flask|gunicorn|requests|Pillow|numpy|matplotlib)"
-
-echo ""
-echo "Step 2: Starting Gunicorn server..."
-cd "$(dirname "$0")" || exit 1
+# Создаём тестовое изображение если его нет
+mkdir -p static
+if [ ! -f "static/test_image.png" ]; then
+    echo "📸 Создаём тестовое изображение..."
+    python3 -c "
+from PIL import Image
+img = Image.new('RGB', (100, 100), color='blue')
+for i in range(25, 75):
+    for j in range(25, 75):
+        img.putpixel((i, j), (255, 0, 0))
+img.save('static/test_image.png')
+print('Тестовое изображение создано')
+" || echo "⚠ Не удалось создать тестовое изображение"
+fi
 
 # Запускаем сервер в фоне
+echo "🌐 Запускаем Flask сервер..."
+cd /home/runner/work/flask-lab-1/flask-lab-1/flaskapp || cd flaskapp
 gunicorn --bind 127.0.0.1:5000 wsgi:app \
     --workers 1 \
     --timeout 30 \
-    --access-logfile - \
-    --error-logfile - \
+    --access-logfile /tmp/gunicorn.log \
+    --error-logfile /tmp/gunicorn-error.log \
     --daemon
 
-APP_PID=$!
-echo "Server started with PID: $APP_PID"
+SERVER_PID=$!
+echo "Сервер запущен с PID: $SERVER_PID"
 
-echo ""
-echo "Step 3: Waiting for server to be ready..."
-for i in {1..15}; do
-    sleep 2
-    
-    # Проверяем, жив ли процесс
-    if ! kill -0 $APP_PID 2>/dev/null; then
-        echo "✗ Server process died!"
-        ps aux | grep gunicorn
-        exit 1
-    fi
-    
-    # Пробуем подключиться
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health 2>/dev/null | grep -q "200"; then
-        echo "✓ Server is responding (attempt $i)"
-        break
-    fi
-    
-    echo "  Waiting... (attempt $i)"
-    
-    if [ $i -eq 15 ]; then
-        echo "✗ Server failed to start within 30 seconds"
-        echo "Current processes:"
-        ps aux | grep gunicorn
-        echo "Port 5000 status:"
-        netstat -tulpn | grep :5000 || true
-        exit 1
-    fi
-done
+# Ждём запуска
+echo "⏳ Ждём запуска сервера (10 секунд)..."
+sleep 10
 
-echo ""
-echo "Step 4: Running comprehensive tests..."
-python client.py
-TEST_RESULT=$?
-
-echo ""
-echo "Step 5: Stopping server..."
-kill -TERM $APP_PID 2>/dev/null || true
-sleep 3
-
-# Проверяем, что процесс убит
-if kill -0 $APP_PID 2>/dev/null; then
-    echo "Server still running, forcing kill..."
-    kill -9 $APP_PID 2>/dev/null || true
+# Проверяем, что процесс жив
+if ! kill -0 $SERVER_PID 2>/dev/null; then
+    echo "❌ Процесс сервера умер!"
+    echo "Логи Gunicorn:"
+    cat /tmp/gunicorn-error.log 2>/dev/null || echo "Логи недоступны"
+    exit 1
 fi
 
-echo ""
-echo "=========================================="
-echo "Test completed with exit code: $TEST_RESULT"
-echo "=========================================="
+# Запускаем тесты
+echo "🧪 Запускаем тесты..."
+python3 client.py
+TEST_RESULT=$?
 
+# Останавливаем сервер
+echo "🛑 Останавливаем сервер..."
+kill -TERM $SERVER_PID 2>/dev/null || true
+sleep 3
+
+# Проверяем завершение
+if kill -0 $SERVER_PID 2>/dev/null; then
+    echo "⚠ Сервер не остановился, принудительно завершаем..."
+    kill -9 $SERVER_PID 2>/dev/null || true
+fi
+
+echo "📊 Результат тестов: $TEST_RESULT"
 exit $TEST_RESULT

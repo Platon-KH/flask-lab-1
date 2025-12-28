@@ -20,8 +20,15 @@ jobs:
         pip install gunicorn
         pip install requests
     
-    - name: Make script executable
-      run: chmod +x flaskapp/run_test.sh
+    - name: Make scripts executable
+      run: |
+        chmod +x flaskapp/run_test.sh
+    
+    - name: Check files
+      run: |
+        ls -la flaskapp/
+        echo "---"
+        cat flaskapp/run_test.sh
     
     - name: Run tests
       run: |

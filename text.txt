@@ -43,4 +43,7 @@ andrey@ubunt:~/Загрузки/flask-lab-1-main$ ^C
 andrey@ubunt:~/Загрузки/flask-lab-1-main$ 
 
 стр. 82
-Создал капчу, непонятно что с ней делать дальше
+Создал капчу
+app.config['RECAPTCHA_PUBLIC_KEY'] = '6Lc8LDksAAAAABTWuS9bnczEP6RDywn8yL_F7WcR'
+app.config['RECAPTCHA_PRIVATE_KEY'] = '6Lc8LDksAAAAAH2NU7QiumP-iDDwQHwwzkYzyb4y'
+, непонятно что с ней делать дальше

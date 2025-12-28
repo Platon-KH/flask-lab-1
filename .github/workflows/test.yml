@@ -17,25 +17,74 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-glx
+        sudo apt-get install -y \
+          libgl1-mesa-glx \
+          libglib2.0-0 \
+          libsm6 \
+          libxext6 \
+          libxrender-dev
     
     - name: Install Python dependencies
       run: |
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip
+        pip install flask==2.3.3
+        pip install gunicorn==21.2.0
+        pip install requests==2.31.0
+        pip install Pillow==10.1.0
+        pip install numpy==1.24.3
+        pip install matplotlib==3.7.3
+        pip install Werkzeug==2.3.7
+        echo "Dependencies installed successfully!"
+    
+    - name: Check Python installation
+      run: |
+        python --version
+        pip list
     
     - name: Make scripts executable
       run: |
         chmod +x flaskapp/run_test.sh
+        echo "Script permissions set"
     
-    - name: Check project structure
+    - name: Create necessary directories
       run: |
+        mkdir -p flaskapp/static/uploads
+        mkdir -p flaskapp/static/results
+        mkdir -p flaskapp/templates
+        echo "Directory structure:"
         ls -la flaskapp/
-        echo "--- Templates:"
-        ls -la flaskapp/templates/ || echo "No templates folder"
-        echo "--- Static:"
-        ls -la flaskapp/static/ || echo "No static folder"
+        echo "---"
+        ls -la flaskapp/static/
+    
+    - name: Check templates
+      run: |
+        echo "Checking templates..."
+        if [ -f "flaskapp/templates/simple.html" ]; then
+          echo "✓ simple.html exists"
+          head -5 flaskapp/templates/simple.html
+        else
+          echo "✗ simple.html missing!"
+        fi
     
     - name: Run tests
       run: |
+        echo "=== Starting test execution ==="
         cd flaskapp
-        ./run_test.sh
+        echo "Current directory: $(pwd)"
+        echo "Files in directory:"
+        ls -la
+        
+        # Даём немного времени перед запуском
+        sleep 2
+        
+        # Запускаем тесты с таймаутом
+        timeout 120 ./run_test.sh
+        
+    - name: Upload test artifacts (on failure)
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-logs
+        path: |
+          flaskapp/
+          .github/workflows/

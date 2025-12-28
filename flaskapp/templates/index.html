@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа №1 - Вариант 20</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        
+        .form-section, .info-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #4b6cb7;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(75, 108, 183, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .info-section h3 {
+            color: #4b6cb7;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4b6cb7;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #dc3545;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .test-image {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .test-image img {
+            max-width: 200px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        .nav-links a {
+            color: #4b6cb7;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #4b6cb7;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: #4b6cb7;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Лабораторная работа №1</h1>
+            <div class="subtitle">Разработка веб-приложения на Python • Вариант 20</div>
+        </div>
+        
+        <div class="content">
+            <div class="form-section">
+                <h2>Обработка изображения</h2>
+                
+                {% if error %}
+                <div class="error">
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="file">Выберите изображение:</label>
+                        <input type="file" id="file" name="file" class="form-control" accept="image/*" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shift">Сдвиг (пикселов):</label>
+                        <input type="number" id="shift" name="shift" class="form-control" 
+                               min="1" max="100" value="10" required>
+                        <small style="color: #6c757d;">Количество пикселов для циклического сдвига рамок</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="layers">Количество рамок:</label>
+                        <input type="number" id="layers" name="layers" class="form-control" 
+                               min="1" max="20" value="5" required>
+                        <small style="color: #6c757d;">Сколько прямоугольных рамок обрабатывать (от внешней к внутренней)</small>
+                    </div>
+                    
+                    <button type="submit" class="btn">Обработать изображение</button>
+                </form>
+                
+                <div class="test-image">
+                    <p>Или используйте тестовое изображение:</p>
+                    <a href="/static/test_image.png" target="_blank">
+                        <img src="/static/test_image.png" alt="Тестовое изображение">
+                    </a>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Вариант 20: Спиральный сдвиг изображения</h3>
+                
+                <ul class="feature-list">
+                    <li><strong>Сдвиг по прямоугольным рамкам</strong> - изображение делится на вложенные прямоугольники</li>
+                    <li><strong>Циклический сдвиг</strong> - пиксели каждой рамки сдвигаются по кругу</li>
+                    <li><strong>Уменьшение эффекта к центру</strong> - внешние рамки сдвигаются сильнее</li>
+                    <li><strong>Автоматическая гистограмма</strong> - анализ распределения цветов</li>
+                    <li><strong>Визуализация результата</strong> - сравнение исходного и обработанного</li>
+                    <li><strong>Поддержка форматов</strong> - PNG, JPG, JPEG, GIF, BMP</li>
+                </ul>
+                
+                <div style="background: #e8f4f8; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                    <h4>Как это работает:</h4>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Изображение делится на вложенные прямоугольные рамки</li>
+                        <li>Каждая рамка обрабатывается независимо</li>
+                        <li>Пиксели рамки сдвигаются по периметру</li>
+                        <li>Создаётся визуализация распределения цветов</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/data_to">Пример шаблонов (2.6)</a>
+            <a href="/form_example">Пример форм (2.7)</a>
+            <a href="/test">Тест CI</a>
+            <a href="/health">Проверка здоровья</a>
+        </div>
+    </div>
+</body>
+</html>

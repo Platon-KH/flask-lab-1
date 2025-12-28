@@ -1,23 +1,27 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request
 import os
 from werkzeug.utils import secure_filename
 import io
-import base64
 from PIL import Image
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
-# Настройки
-UPLOAD_FOLDER = 'flaskapp/static/uploads'
+# Настройки - используем абсолютные пути
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+RESULTS_FOLDER = os.path.join(BASE_DIR, 'static', 'results')
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 # Создаём папки если их нет
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs('static/results', exist_ok=True)
+os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -25,6 +29,7 @@ def allowed_file(filename):
 def spiral_shift_image(image_array, shift_pixels, num_layers):
     """
     Сдвиг изображения по прямоугольным рамкам (спиральный эффект)
+    Вариант 20
     """
     height, width = image_array.shape[:2]
     result = image_array.copy()
@@ -54,19 +59,19 @@ def spiral_shift_image(image_array, shift_pixels, num_layers):
         
         # Верхняя сторона
         for x in range(left, right):
-            pixels.append(result[top, x])
+            pixels.append(result[top, x].copy())
         
         # Правая сторона
         for y in range(top, bottom):
-            pixels.append(result[y, right])
+            pixels.append(result[y, right].copy())
         
         # Нижняя сторона (справа налево)
         for x in range(right, left, -1):
-            pixels.append(result[bottom, x])
+            pixels.append(result[bottom, x].copy())
         
         # Левая сторона (снизу вверх)
         for y in range(bottom, top, -1):
-            pixels.append(result[y, left])
+            pixels.append(result[y, left].copy())
         
         # Применяем циклический сдвиг
         if current_shift > 0:
@@ -99,26 +104,30 @@ def spiral_shift_image(image_array, shift_pixels, num_layers):
 
 def create_color_histogram(image_array):
     """Создаёт график распределения цветов"""
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-    colors = ['Red', 'Green', 'Blue']
-    
-    for i, color in enumerate(colors):
-        axes[i].hist(image_array[:, :, i].flatten(), bins=50, 
-                    color=color.lower(), alpha=0.7, density=True)
-        axes[i].set_title(f'{color} Channel Distribution')
-        axes[i].set_xlabel('Intensity')
-        axes[i].set_ylabel('Frequency')
-        axes[i].grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    
-    # Сохраняем в буфер
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=100)
-    plt.close()
-    buf.seek(0)
-    
-    return buf
+    try:
+        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+        colors = ['Red', 'Green', 'Blue']
+        
+        for i, color in enumerate(colors):
+            axes[i].hist(image_array[:, :, i].flatten(), bins=50, 
+                        color=color.lower(), alpha=0.7, density=True)
+            axes[i].set_title(f'{color} Channel Distribution')
+            axes[i].set_xlabel('Intensity')
+            axes[i].set_ylabel('Frequency')
+            axes[i].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        # Сохраняем в буфер
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100)
+        plt.close(fig)  # Явно закрываем фигуру
+        buf.seek(0)
+        
+        return buf
+    except Exception as e:
+        print(f"Error creating histogram: {e}")
+        return None
 
 @app.route("/")
 def hello():
@@ -149,9 +158,10 @@ def process_image():
         # Сохраняем файл
         filename = secure_filename(file.filename)
         original_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(original_path)
         
         try:
+            file.save(original_path)
+            
             # Открываем изображение
             img = Image.open(original_path)
             img_array = np.array(img)
@@ -168,24 +178,32 @@ def process_image():
             # Сохраняем результат
             processed_img = Image.fromarray(processed_array)
             processed_filename = f'processed_{filename}'
-            processed_path = os.path.join('static/results', processed_filename)
+            processed_path = os.path.join(RESULTS_FOLDER, processed_filename)
             processed_img.save(processed_path)
             
             # Создаём гистограмму цветов
             histogram_buf = create_color_histogram(img_array)
-            chart_filename = f'chart_{filename.split(".")[0]}.png'
-            chart_path = os.path.join('static/results', chart_filename)
             
-            with open(chart_path, 'wb') as f:
-                f.write(histogram_buf.read())
-            
-            # Отображаем результат
-            return render_template('simple.html',
-                                 original_image=f'/static/uploads/{filename}',
-                                 processed_image=f'/static/results/{processed_filename}',
-                                 chart_image=f'/static/results/{chart_filename}',
-                                 shift=shift_pixels,
-                                 layers=num_layers)
+            if histogram_buf:
+                chart_filename = f'chart_{filename.split(".")[0]}.png'
+                chart_path = os.path.join(RESULTS_FOLDER, chart_filename)
+                
+                with open(chart_path, 'wb') as f:
+                    f.write(histogram_buf.read())
+                
+                # Отображаем результат
+                return render_template('simple.html',
+                                     original_image=f'static/uploads/{filename}',
+                                     processed_image=f'static/results/{processed_filename}',
+                                     chart_image=f'static/results/{chart_filename}',
+                                     shift=shift_pixels,
+                                     layers=num_layers)
+            else:
+                return render_template('simple.html',
+                                     original_image=f'static/uploads/{filename}',
+                                     processed_image=f'static/results/{processed_filename}',
+                                     shift=shift_pixels,
+                                     layers=num_layers)
         
         except Exception as e:
             return render_template('simple.html', 
@@ -202,5 +220,15 @@ def data_to():
     return render_template('simple.html', some_str=some_str,
                          some_value=some_value, some_pars=some_pars)
 
+@app.route("/test")
+def test():
+    """Простая тестовая страница"""
+    return "Test page working! ✅"
+
+@app.route("/health")
+def health():
+    """Проверка здоровья приложения"""
+    return "OK", 200
+
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

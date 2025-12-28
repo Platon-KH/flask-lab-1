@@ -1,4 +1,4 @@
-name: Flask CI
+name: Flask CI/CD
 
 on: [push, pull_request]
 
@@ -18,10 +18,12 @@ jobs:
       run: |
         pip install flask
         pip install gunicorn
+        pip install requests
     
-    - name: Test Flask app
+    - name: Make script executable
+      run: chmod +x flaskapp/run_test.sh
+    
+    - name: Run tests
       run: |
         cd flaskapp
-        python some_app.py &
-        sleep 3
-        curl -f http://127.0.0.1:5000/
+        ./run_test.sh

@@ -14,21 +14,26 @@ jobs:
       with:
         python-version: '3.8'
     
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
-        pip install flask
-        pip install gunicorn
-        pip install requests
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-glx
+    
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements.txt
     
     - name: Make scripts executable
       run: |
         chmod +x flaskapp/run_test.sh
     
-    - name: Check files
+    - name: Check project structure
       run: |
         ls -la flaskapp/
-        echo "---"
-        cat flaskapp/run_test.sh
+        echo "--- Templates:"
+        ls -la flaskapp/templates/ || echo "No templates folder"
+        echo "--- Static:"
+        ls -la flaskapp/static/ || echo "No static folder"
     
     - name: Run tests
       run: |

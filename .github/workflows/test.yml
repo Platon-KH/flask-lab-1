@@ -1,4 +1,4 @@
-name: Test CI
+name: Flask CI
 
 on: [push, pull_request]
 
@@ -7,5 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Print message
-        run: echo "Всё работает! CI настроен."
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    
+    - name: Install dependencies
+      run: |
+        pip install flask
+        pip install gunicorn
+    
+    - name: Test Flask app
+      run: |
+        cd flaskapp
+        python some_app.py &
+        sleep 3
+        curl -f http://127.0.0.1:5000/

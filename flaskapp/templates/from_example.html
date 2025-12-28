@@ -1,27 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Пример форм (2.7)</title>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; }
-        input { padding: 8px; width: 300px; }
-    </style>
-</head>
-<body>
-    <h1>Пример формы (раздел 2.7)</h1>
-    <form method="POST">
-        <div class="form-group">
-            <label>Имя:</label>
-            <input type="text" name="name" required>
-        </div>
-        <div class="form-group">
-            <label>Email:</label>
-            <input type="email" name="email" required>
-        </div>
-        <button type="submit">Отправить</button>
-    </form>
-    <a href="/">Вернуться на главную</a>
-</body>
-</html>
+<!-- templates/form_example.html -->
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Вариант 20: Сдвиг по прямоугольным слоям{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Обработка изображения: сдвиг по прямоугольным слоям</h2>
+  {{ wtf.quick_form(form, method='post', enctype='multipart/form-data') }}
+</div>
+{% endblock %}

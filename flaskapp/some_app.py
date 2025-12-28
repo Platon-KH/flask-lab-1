@@ -1,4 +1,3 @@
-# some_app.py
 from flask import Flask, render_template, request, url_for
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
@@ -9,53 +8,39 @@ import os
 from PIL import Image
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')  # важно для работы без GUI
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = 'lab20-secret'
 Bootstrap(app)
 
-UPLOAD_FOLDER = os.path.join('flaskapp', 'static', 'uploads')
-RESULT_FOLDER = os.path.join('flaskapp', 'static', 'results')
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+RESULT_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'results')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 class ShiftForm(FlaskForm):
-    image = FileField('Загрузите изображение', validators=[
-        DataRequired(),
-        lambda form, field: field.data.filename.lower().endswith(('.png', '.jpg', '.jpeg'))
-    ])
+    image = FileField('Загрузите изображение', validators=[DataRequired()])
     shift = IntegerField('Сдвиг (пиксели)', validators=[
         DataRequired(),
         NumberRange(min=1, max=1000)
     ])
     submit = SubmitField('Обработать')
 
-def shift_layer(arr, shift):
-    """Циклический сдвиг 1D массива (слоя)"""
-    return np.roll(arr, shift)
-
-def get_rectangular_layers(img_array):
-    """Генератор: возвращает индексы слоёв (рамок) прямоугольного изображения"""
-    h, w = img_array.shape[:2]
+def get_rectangular_layers(h, w):
     layers = []
     top, bottom = 0, h - 1
     left, right = 0, w - 1
-
     while top <= bottom and left <= right:
         layer = []
-        # Верхняя горизонталь
         for j in range(left, right + 1):
             layer.append((top, j))
-        # Правая вертикаль (без угла)
         for i in range(top + 1, bottom + 1):
             layer.append((i, right))
-        # Нижняя горизонталь (если есть)
         if top != bottom:
             for j in range(right - 1, left - 1, -1):
                 layer.append((bottom, j))
-        # Левая вертикаль (без углов)
         if left != right:
             for i in range(bottom - 1, top, -1):
                 layer.append((i, left))
@@ -67,70 +52,63 @@ def get_rectangular_layers(img_array):
     return layers
 
 def shift_rectangular_layers(img_array, shift):
-    """Сдвигает каждый прямоугольный слой изображения циклически"""
     out = img_array.copy()
-    layers = get_rectangular_layers(img_array)
-
+    h, w = img_array.shape[:2]
+    layers = get_rectangular_layers(h, w)
     for layer in layers:
-        if len(layer) == 0:
+        if not layer:
             continue
-        # Извлекаем пиксели слоя
         pixels = np.array([img_array[i, j] for (i, j) in layer])
-        # Ограничиваем сдвиг длиной слоя
-        actual_shift = shift % len(pixels) if len(pixels) > 0 else 0
-        shifted_pixels = shift_layer(pixels, actual_shift)
-        # Записываем обратно
+        actual_shift = shift % len(pixels)
+        shifted = np.roll(pixels, actual_shift, axis=0)
         for idx, (i, j) in enumerate(layer):
-            out[i, j] = shifted_pixels[idx]
-
+            out[i, j] = shifted[idx]
     return out
 
-def plot_color_histogram(img_array, path):
-    """Сохраняет гистограмму RGB распределения"""
+def plot_histogram(img_array, path):
     plt.figure(figsize=(6, 4))
-    colors = ('r', 'g', 'b')
-    for i, color in enumerate(colors):
+    for i, color in enumerate(['r', 'g', 'b']):
         hist, bins = np.histogram(img_array[:, :, i].flatten(), bins=256, range=(0, 256))
-        plt.plot(bins[:-1], hist, color=color, alpha=0.7, label=f'{color.upper()} channel')
+        plt.plot(bins[:-1], hist, color=color, alpha=0.7)
     plt.title('Распределение цветов (RGB)')
     plt.xlabel('Интенсивность')
     plt.ylabel('Частота')
-    plt.legend()
     plt.tight_layout()
     plt.savefig(path)
     plt.close()
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
+    return render_template('form_example.html')
+
+@app.route('/data_to', methods=['GET', 'POST'])
+def data_to():
     form = ShiftForm()
     if form.validate_on_submit():
         filename = secure_filename(form.image.data.filename)
         img_path = os.path.join(UPLOAD_FOLDER, filename)
         form.image.data.save(img_path)
 
-        shift = form.shift.data
         img = Image.open(img_path).convert('RGB')
         img_array = np.array(img)
+        shift = form.shift.data
 
-        # Обработка
         result_array = shift_rectangular_layers(img_array, shift)
         result_img = Image.fromarray(result_array.astype('uint8'))
         result_filename = 'result_' + filename
         result_path = os.path.join(RESULT_FOLDER, result_filename)
         result_img.save(result_path)
 
-        # Гистограммы
-        orig_hist = os.path.join(RESULT_FOLDER, 'hist_orig_' + filename.replace('.jpg', '.png').replace('.jpeg', '.png'))
-        result_hist = os.path.join(RESULT_FOLDER, 'hist_result_' + filename.replace('.jpg', '.png').replace('.jpeg', '.png'))
+        orig_hist = os.path.join(RESULT_FOLDER, 'hist_orig_' + os.path.splitext(filename)[0] + '.png')
+        result_hist = os.path.join(RESULT_FOLDER, 'hist_result_' + os.path.splitext(filename)[0] + '.png')
 
-        plot_color_histogram(img_array, orig_hist)
-        plot_color_histogram(result_array, result_hist)
+        plot_histogram(img_array, orig_hist)
+        plot_histogram(result_array, result_hist)
 
         return render_template('form_result.html',
                                orig_img=url_for('static', filename=f'uploads/{filename}'),
                                result_img=url_for('static', filename=f'results/{result_filename}'),
-                               orig_hist=url_for('static', filename=f'results/hist_orig_{filename.replace(".jpg", ".png").replace(".jpeg", ".png")}'),
-                               result_hist=url_for('static', filename=f'results/hist_result_{filename.replace(".jpg", ".png").replace(".jpeg", ".png")}')
+                               orig_hist=url_for('static', filename=f'results/hist_orig_{os.path.splitext(filename)[0]}.png'),
+                               result_hist=url_for('static', filename=f'results/hist_result_{os.path.splitext(filename)[0]}.png')
                                )
-
     return render_template('form_example.html', form=form)

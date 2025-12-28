@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 app = Flask(__name__)
 
 # Настройки
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = 'flaskapp/static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
